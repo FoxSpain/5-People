@@ -47,30 +47,20 @@ TRACKS = [
 ]
 
 def fetch_feed_items():
-    """遍历所有赛道信源，抓取最近更新"""
+    """遍历所有赛道信源，带 5 秒超时保护，防止请求卡死"""
     raw_data = []
     for track in TRACKS:
         track_name = track["name"]
         for url in track["sources"]:
             try:
                 print(f"正在抓取 [{track_name}] -> {url}")
-                feed = feedparser.parse(url)
-                if feed.bozo:
-                    print(f"警告: 解析 RSS 存在潜在格式问题 [{url}]: {feed.bozo_exception}")
+                response = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+                if response.status_code != 200:
+                    print(f"跳过: 状态码异常 [{response.status_code}]")
+                    continue
                 
+                feed = feedparser.parse(response.content)
                 entries = feed.entries[:3]
                 print(f"成功获取 {len(entries)} 条内容")
                 
-                for entry in entries:
-                    raw_data.append({
-                        "track": track_name,
-                        "title": entry.get("title", ""),
-                        "summary": entry.get("summary", entry.get("description", ""))[:1500],
-                        "link": entry.get("link", "")
-                    })
-            except Exception as e:
-                print(f"抓取异常 [{url}]: {e}")
-    return raw_data
-
-def evaluate_and_summarize(items):
-    """利用 Gemini 3.8 Flash 进行严苛打分筛选与极简提炼"""
+                for entry in entries
