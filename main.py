@@ -20,7 +20,7 @@ except Exception as e:
     print(f"初始化 Gemini 客户端失败: {e}")
     sys.exit(1)
 
-# 5大核心领域赛道及信源
+# 5大核心领域赛道及稳定信源
 TRACKS = [
     {
         "name": "AI与前沿技术",
@@ -39,19 +39,18 @@ TRACKS = [
         "name": "风险投资与商业趋势",
         "sources": [
             "http://www.paulgraham.com/rss.html",
-            "https://a16z.com/feed/",
         ]
     },
     {
         "name": "宏观经济与货币周期",
         "sources": [
-            "https://oaktreesurplus.com/insights/feed"
+            # 如有稳定的宏观 RSS 可在此添加
         ]
     }
 ]
 
 def fetch_feed_items():
-    """带独立容错的 RSS 抓取逻辑，单个失败绝不崩盘"""
+    """带独立容错的 RSS 抓取逻辑"""
     raw_data = []
     for track in TRACKS:
         track_name = track["name"]
@@ -79,7 +78,7 @@ def fetch_feed_items():
     return raw_data
 
 def evaluate_and_summarize(items):
-    """利用 Gemini 进行严苛打分筛选"""
+    """利用 Gemini 3.8 Flash 进行严苛打分筛选"""
     if not items:
         return "今日核心圈层无重磅输出。保持噪音过滤。"
 
@@ -104,9 +103,9 @@ def evaluate_and_summarize(items):
 """
 
     try:
-        print("正在调用 Gemini 模型进行分析与打分...")
+        print("正在调用 Gemini 3.8 Flash 模型进行分析与打分...")
         response = client.models.generate_content(
-            model="gemini-2.0-flash",  # 使用官方稳定通用的 flash 模型
+            model="gemini-3.8-flash",  # 修正为最新可用的 Flash 模型
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction="你是一个极度严苛、追求高信噪比的首席科技与宏观资本分析师，行文惜字如金。",
@@ -116,7 +115,7 @@ def evaluate_and_summarize(items):
         return response.text
     except Exception as e:
         print(f"Gemini API 调用报错: {e}")
-        return "今日核心圈层无重磅输出。保持噪音过滤。"
+        raise e  # 抛出异常，不再静默吞错
 
 def push_to_feishu(text):
     """推送到飞书"""
