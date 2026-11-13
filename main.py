@@ -79,7 +79,7 @@ def fetch_feed_items():
     return raw_data
 
 def evaluate_and_summarize(items):
-    """利用 Gemini 3.8 Flash 进行严苛打分筛选，具备 503 自动重试保护"""
+    """利用 Gemini 3.8 Flash 进行严苛打分筛选，具备 5 次递增重试保护"""
     if not items:
         return "今日核心圈层无重磅输出。保持噪音过滤。"
 
@@ -103,7 +103,7 @@ def evaluate_and_summarize(items):
 如果所有赛道今天集体哑火、没有 7 分以上内容，请直接统一输出："今日核心圈层无重磅输出。保持噪音过滤。"
 """
 
-    max_retries = 3
+    max_retries = 5  # 最多重试 5 次
     for attempt in range(max_retries):
         try:
             print(f"正在调用 Gemini 3.8 Flash 模型进行分析与打分（尝试 {attempt + 1}/{max_retries}）...")
@@ -119,8 +119,8 @@ def evaluate_and_summarize(items):
         except Exception as e:
             print(f"Gemini API 调用遇到异常 (尝试 {attempt + 1}): {e}")
             if attempt < max_retries - 1:
-                sleep_time = (attempt + 1) * 3  # 递增等待时间：3秒、6秒...
-                print(f"服务器拥堵或限流，等待 {sleep_time} 秒后自动重试...")
+                sleep_time = (attempt + 1) * 10  # 递增等待时间：10秒、20秒、30秒、40秒
+                print(f"服务器拥堵或限流，耐心等待 {sleep_time} 秒后重试...")
                 time.sleep(sleep_time)
             else:
                 print("重试次数耗尽，已触发安全兜底机制。")
