@@ -1,0 +1,28 @@
+name: Daily High-Signal Board Push
+
+on:
+  schedule:
+    - cron: '30 22 * * *' # 每天北京时间早上 6:30 运行 (UTC 22:30)
+  workflow_dispatch:      # 允许你在 GitHub 网页端随时手动点击测试
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install requests feedparser google-genai
+
+      - name: Run Extraction & Push Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+        run: python main.py
