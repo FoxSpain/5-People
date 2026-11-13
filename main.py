@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import requests
 import feedparser
 from google import genai
@@ -50,7 +51,7 @@ TRACKS = [
 ]
 
 def fetch_feed_items():
-    """带独立容错的 RSS 抓取逻辑"""
+    """带独立容错的 RSS 抓取逻辑，单个失败绝不崩盘"""
     raw_data = []
     for track in TRACKS:
         track_name = track["name"]
@@ -78,7 +79,7 @@ def fetch_feed_items():
     return raw_data
 
 def evaluate_and_summarize(items):
-    """利用 Gemini 3.8 Flash 进行严苛打分筛选"""
+    """利用 Gemini 3.8 Flash 进行严苛打分筛选，具备 503 自动重试保护"""
     if not items:
         return "今日核心圈层无重磅输出。保持噪音过滤。"
 
@@ -102,20 +103,28 @@ def evaluate_and_summarize(items):
 如果所有赛道今天集体哑火、没有 7 分以上内容，请直接统一输出："今日核心圈层无重磅输出。保持噪音过滤。"
 """
 
-    try:
-        print("正在调用 Gemini 3.8 Flash 模型进行分析与打分...")
-        response = client.models.generate_content(
-            model="gemini-3.8-flash",  # 修正为最新可用的 Flash 模型
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction="你是一个极度严苛、追求高信噪比的首席科技与宏观资本分析师，行文惜字如金。",
-                temperature=0.1,
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            print(f"正在调用 Gemini 3.8 Flash 模型进行分析与打分（尝试 {attempt + 1}/{max_retries}）...")
+            response = client.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction="你是一个极度严苛、追求高信噪比的首席科技与宏观资本分析师，行文惜字如金。",
+                    temperature=0.1,
+                )
             )
-        )
-        return response.text
-    except Exception as e:
-        print(f"Gemini API 调用报错: {e}")
-        raise e  # 抛出异常，不再静默吞错
+            return response.text
+        except Exception as e:
+            print(f"Gemini API 调用遇到异常 (尝试 {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                sleep_time = (attempt + 1) * 3  # 递增等待时间：3秒、6秒...
+                print(f"服务器拥堵或限流，等待 {sleep_time} 秒后自动重试...")
+                time.sleep(sleep_time)
+            else:
+                print("重试次数耗尽，已触发安全兜底机制。")
+                return "今日核心圈层无重磅输出。保持噪音过滤（API 繁忙）。"
 
 def push_to_feishu(text):
     """推送到飞书"""
