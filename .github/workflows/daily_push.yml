@@ -1,30 +1,30 @@
-name: Daily High-Signal Board Push
+# name: Daily High-Signal Board Push
 
-on:
-  schedule:
-    - cron: '30 22 * * *'
-  workflow_dispatch:
+# on:
+#   schedule:
+#     - cron: '30 22 * * *'
+#   workflow_dispatch:
 
-jobs:
-  run-bot:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+# jobs:
+#   run-bot:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.10'
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install requests feedparser google-genai
+#       - name: Install dependencies
+#         run: |
+#           pip install --upgrade pip
+#           pip install requests feedparser google-genai
 
-      - name: Run Extraction & Push Script
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
-          PYTHONUNBUFFERED: "1"
-        run: python main.py
+#       - name: Run Extraction & Push Script
+#         env:
+#           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+#           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+#           PYTHONUNBUFFERED: "1"
+#         run: python main.py
